@@ -135,6 +135,74 @@ Considered and rejected:
 
 ---
 
+---
+
+## Wiring `ram` (fork of `memory`) into `crypton`
+
+Three things are needed:
+
+1. **`cabal.project`** — add the local source dir so cabal can find it:
+   ```
+   packages: .
+            ../memory
+   ```
+   Without this, cabal will try Hackage and fail if the version isn't published.
+
+2. **`cabal.project.local`** — use this file (git-ignored by convention) for
+   local dev overrides that shouldn't be committed to the main project file.
+   Supports the same stanzas as `cabal.project`; package additions are additive.
+
+3. **`crypton.cabal`** — replace `memory` with `ram` in every `build-depends`
+   stanza (library, test-suite, benchmark).
+
+---
+
+## `WITH_BYTESTRING_SUPPORT` CPP flag — remove it
+
+The `ByteString` instances for `ByteArrayAccess`/`ByteArray` in
+`Data.ByteArray.Types` were historically guarded by
+`#ifdef WITH_BYTESTRING_SUPPORT`. In `ram`, `bytestring` is an unconditional
+dependency, so the flag serves no purpose. The right fix is:
+
+- Remove the `#ifdef` / `#endif` guards and the `{-# LANGUAGE CPP #-}` pragma.
+- Remove `cpp-options: -DWITH_BYTESTRING_SUPPORT` from `ram.cabal` (don't add
+  it in the first place).
+- Inline the `ByteString` imports unconditionally.
+
+Without this fix, `ByteArrayAccess ByteString` is not in scope, causing errors
+like *"Could not deduce ByteArrayAccess StrictByteString"* in `Crypto/Hash.hs`
+and `Crypto/KDF/BCryptPBKDF.hs`.
+
+---
+
+## `foldl'` — do NOT remove `import Data.List (foldl')` from crypton
+
+GHC 9.10 reports `import Data.List (foldl')` as redundant because `foldl'`
+was added to `Prelude` in GHC 9.6. However, `crypton` targets GHC 8.8+ (see
+`tested-with` in the cabal file). On GHC < 9.6, `foldl'` is **not** in
+`Prelude` and the explicit import is required.
+
+**Do not remove these imports.** The `-Wunused-imports` warning on GHC 9.x is
+the acceptable trade-off for cross-version compatibility.
+
+Same applies to `import Crypto.Hash.Types` in `Crypto/PubKey/ECDSA.hs` —
+apparently needed for re-exports on older GHC.
+
+---
+
+## Leftover imports from basement removal in `ram`
+
+After removing the `#ifdef WITH_BASEMENT_SUPPORT` block from `Data.ByteArray.Types`,
+these imports became unused and should be deleted:
+- `import Data.Proxy (Proxy(..))` — was used by basement's `Block` instance
+- `import Data.Word (Word8)` — same
+
+After removing `basement` from `Bytes.hs` and `ScrubbedBytes.hs`:
+- `import Data.Memory.Internal.Imports` — was a basement re-export shim, no
+  longer needed once basement callers are removed
+
+---
+
 ## Next task: memory repository
 Goal: remove `basement` from `memory` package itself.
 Key things `memory` uses from basement:
