@@ -1,4 +1,5 @@
 # Bash commands
+- `nix-shell -p ghc cabal-install --run "cabal update"`: Get latest packages
 - `nix-shell -p ghc cabal-install --run "cabal build"`: Run the typechecker
 - `nix-shell -p ghc cabal-install --run "cabal test"`: Run the test suite.
 - To search for Haskell modules, types, or documentation, ALWAYS query the Hoogle web API using curl:

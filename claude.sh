@@ -30,13 +30,12 @@ docker run -it \
     -e TERM=xterm-256color \
     -e COLORTERM=truecolor \
     --user $(id -u):$(id -g) \
-    -v /nix:/nix
+    -v /nix:/nix \
     -v "$(pwd)":/projects \
-    -v "$(pwd)../crypton":/projects/crypton \
-    -v "$(pwd)../hs-memory":/projects/memory \
+    -v "$(pwd)/../crypton":/projects/crypton \
+    -v "$(pwd)/../hs-memory":/projects/memory \
     -v "$HOME/.claude.json":/home/node/.claude.json \
     -v "$HOME/.claude":/home/node/.claude \
-    -w /app \
     --rm \
     claude-env \
     bash
