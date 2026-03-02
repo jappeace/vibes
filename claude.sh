@@ -32,8 +32,7 @@ docker run -it \
     --user $(id -u):$(id -g) \
     -v /nix:/nix \
     -v "$(pwd)":/projects \
-    -v "$(pwd)/../crypton":/projects/crypton \
-    -v "$(pwd)/../hs-memory":/projects/memory \
+    -v "$(pwd)/../vibes":/projects/vibes \
     -v "$HOME/.claude.json":/home/node/.claude.json \
     -v "$HOME/.claude":/home/node/.claude \
     --rm \
