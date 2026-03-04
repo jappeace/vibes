@@ -11,13 +11,26 @@
 - To read a specific module's documentation on Hackage:
   `nix-shell -p w3m --run "w3m -dump https://hackage.haskell.org/package/<package_name>/docs/<Module-Name-With-Dashes>.html"`
 
+# Style
+- Avoid using wildcards on pattern matching if possible, always write out all cases.
+- Always add type signatures to top level bindings, try make types as restrictive as possible.
+
+# Testing
+- A test should be less complex then the implementation.
+- Tests must assert behaviour and logic, not static content. Do not write tests that only verify text labels, column headings, or placeholder values exist — the compiler and type system already catch those.
+- A good test would fail if the logic were wrong. A bad test would only fail if you deleted or renamed a string literal.
+
 # Workflow
-- For a task create a new branch to work from.
+- If a task and the test suite don't align, ask for clarity
+- For a new task create a new branch to work from. 
+  First go to master, make sure it's up to date by pulling, then fork a branch from that.
+  If a PR is still open we can work on the same branch.
 - Be sure to run `cabal build` when you're done making a series of code changes, this can be intermediately run as well to ensure things are consistent. Do not finish the task until the typechecker passes.
 - Repair all newly introduced warnings.
+- If we're implementing any new function or behaviour, add a test to assert it works.
 - At the end of a task and it typechecks, run `cabal test` to make sure no 
   known regressions occurred.
-- For new features think of a happy path test and implement that as well, make sure it passes.
 - Commit your changes, message should contain the summary of the done work, the first line should be synopsis of that.
 - Push the changes, don't force push.
-- Once completed write a summery of the work with date and time to tasks.md. Every task should have it's own section.
+- Open a pull request with the changes on github.
+- Once completed write the prompt and a summery of the work with date and time to tasks.md. Every task should have it's own section. Write the consumed tokens in here as well.
