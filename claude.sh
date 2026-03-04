@@ -6,7 +6,7 @@ set -xe
 touch "$HOME/.claude.json"
 
 echo "FROM node:22-bookworm-slim
-RUN apt-get update && apt-get install -y git curl xz-utils && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gh git curl xz-utils && rm -rf /var/lib/apt/lists/*
 
 RUN usermod -u $(id -u) node || true
 RUN groupmod -g $(id -g) node || true
@@ -31,6 +31,7 @@ docker run -it \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
     -e TERM=xterm-256color \
     -e COLORTERM=truecolor \
+    -e GH_TOKEN=$(cat ~/.gh_token) \
     --user $(id -u):$(id -g) \
     -v /nix:/nix \
     -v "$(pwd)":/projects \
