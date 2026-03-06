@@ -8,13 +8,16 @@ docker load -i "$(nix-build default.nix)"
 
 # 2. Run the container
 docker run -it \
+    --tmpfs /tmp:rw,exec,mode=1777 \
     --init \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
     -e TERM=xterm-256color \
     -e COLORTERM=truecolor \
     -e GH_TOKEN="$(cat ~/.gh_token)" \
     -e HOME="/home/claude" \
+    -e NIX_REMOTE=daemon \
     --user "$(id -u):$(id -g)" \
+    -v /nix/var/nix/daemon-socket/socket:/nix/var/nix/daemon-socket/socket \
     -v /nix/store:/nix/store:ro \
     -v "$(pwd)/root":/home/claude \
     -v "$(pwd)/../vibes":/home/claude/vibes \
