@@ -19,6 +19,7 @@ docker load -i "$(nix-build default.nix)"
 docker run -it \
     --tmpfs /tmp:rw,exec,mode=1777 \
     --init \
+    --dns 8.8.8.8 \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
     -e INSTANCE_NAME=$INSTANCE_NAME \
     -e TERM=xterm-256color \

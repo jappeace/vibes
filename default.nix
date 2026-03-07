@@ -11,6 +11,13 @@ in
 pkgs.dockerTools.buildImage {
   name = "claude-env";
   tag = "latest";
+  extraCommands = ''
+    # Create the directory first
+    mkdir -p home/claude
+    # Note: Use relative paths (home/claude) or absolute (/home/claude)
+    # but ensure the parent exists before chown
+    chown -R 1000:100 home/claude
+  '';
 
   copyToRoot = pkgs.buildEnv {
     name = "image-root";
