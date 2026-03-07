@@ -18,6 +18,9 @@ Important: after each conversation compacting reread CLAUDE.md
 - To read a specific module's documentation on Hackage:
   `w3m -dump https://hackage.haskell.org/package/<package_name>/docs/<Module-Name-With-Dashes>.html`
 
+The vibes folder is shared between the host and other instances. 
+It's good for cloning work in.
+
 # Style
 - Avoid using wildcards on pattern matching if possible, always write out all cases.
 - Always add type signatures to top level bindings, try make types as restrictive as possible.
