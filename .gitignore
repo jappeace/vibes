@@ -5,3 +5,5 @@
 /root/.claude.json
 /root/.config/
 /root/.local/
+/instances/stan.json
+/instances/stan/
