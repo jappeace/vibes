@@ -13,7 +13,7 @@ Important: after each conversation compacting reread CLAUDE.md
 - cabal test: Run the test suite.
 - To search for Haskell modules, types, or documentation, ALWAYS query the Hoogle web API using curl:
   `curl -s "https://hoogle.haskell.org/?mode=json&hoogle=YOUR_QUERY"`
-- To read actual Hackage documentation, NEVER fetch raw HTML. Instead, use `w3m` via nix-shell to dump the clean text of the page:
+- To read actual Hackage documentation, NEVER fetch raw HTML. Instead, use `w3m` via to dump the clean text of the page:
   `w3m -dump https://hackage.haskell.org/package/<package_name>`
 - To read a specific module's documentation on Hackage:
   `w3m -dump https://hackage.haskell.org/package/<package_name>/docs/<Module-Name-With-Dashes>.html`
@@ -29,7 +29,7 @@ It's good for cloning work in.
 - A test should be less complex then the implementation.
 - Tests must assert behaviour and logic, not static content. Do not write tests that only verify text labels, column headings, or placeholder values exist — the compiler and type system already catch those.
 - A good test would fail if the logic were wrong. A bad test would only fail if you deleted or renamed a string literal.
-- We only test the current codebase, library could is assumed to work.
+- We only test the current codebase, libraries are assumed to work.
 
 # Workflow
 - If a task and the test suite don't align, ask for clarity

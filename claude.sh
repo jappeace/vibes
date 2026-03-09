@@ -30,7 +30,7 @@ docker run -it \
     --user "$(id -u):$(id -g)" \
     -v /nix/var/nix/daemon-socket/socket:/nix/var/nix/daemon-socket/socket \
     -v /nix/store:/nix/store:ro \
-    -v "$HOME/.ssh/sloth:/tmp/.ssh/id_ed25519" \
+    -v "$HOME/.ssh/sloth:/home/claude/.ssh/id_ed25519" \
     -v "$(pwd)/instances/${INSTANCE_NAME}.json":/home/claude/.claude.json \
     -v "$(pwd)/instances/${INSTANCE_NAME}":/home/claude/.claude \
     -v "$(pwd)/CLAUDE.md":/home/claude/.claude/CLAUDE.md \
