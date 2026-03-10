@@ -24,12 +24,18 @@ It's good for cloning work in.
 # Style
 - Avoid using wildcards on pattern matching if possible, always write out all cases.
 - Always add type signatures to top level bindings, try make types as restrictive as possible.
+- If functions cause you confusion add documentation at the deceleration to clear up confusion.
 
 # Testing
 - A test should be less complex then the implementation.
 - Tests must assert behaviour and logic, not static content. Do not write tests that only verify text labels, column headings, or placeholder values exist — the compiler and type system already catch those.
 - A good test would fail if the logic were wrong. A bad test would only fail if you deleted or renamed a string literal.
 - We only test the current codebase, libraries are assumed to work.
+
+# Decision Log                                                  
+- When making significant architectural choices (library selection, design patterns,
+  data representation), write the decision and reasoning to memory before moving on.
+- Format: what was chosen, what alternatives were considered, and why.
 
 # Workflow
 - If a task and the test suite don't align, ask for clarity
@@ -43,4 +49,4 @@ It's good for cloning work in.
 - Commit your changes, message should contain the summary of the done work, the first line should be synopsis of that. At the end of the message include the prompt, also include the used tokens.
 - Push the changes, don't force push.
 - Open a pull request with the changes on github, you can target snoyberg/keter and winterland1989/mysql-haskell directly, otherwise make sure to target jappeace repository, or jappeace-sloth. 
-- You're done once CI passes on github, you've to wait until it passes.
+- You're done once CI passes on github, if it doesn't trigger because it's out of sync, rebase then, you've to wait until it passes.

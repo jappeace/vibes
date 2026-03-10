@@ -13,3 +13,12 @@ Seems to work alright.
 I do not actually trust these llm's,
 but I"m not going to babysit their every
 action, so I run them in a container.
+
+
+Claude doesn't get to see how we start the container.
+
+### WARNING
+I've seen it attempt to write into /etc/shadow 
+to solve the home folder not being writable.
+
+That's an attempt at privilege escalation!
