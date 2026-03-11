@@ -8,6 +8,7 @@ Allowing you to bypass the need to make it smart or lazy.
 
 Claude doesn't get to see how we start the container.
 
+https://jappie.me/haskell-vibes.html
 
 ## Usage
 You need a `~/.gh_token`, create a seperate git bot account to give your llm git access.
