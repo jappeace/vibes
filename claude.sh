@@ -33,6 +33,7 @@ docker run -it \
     -v "$HOME/.ssh/sloth:/home/claude/.ssh/id_ed25519" \
     -v "$(pwd)/instances/${INSTANCE_NAME}.json":/home/claude/.claude.json \
     -v "$(pwd)/instances/${INSTANCE_NAME}":/home/claude/.claude \
+    -v "$(pwd)/settings.json":/home/claude/.claude/settings.json \
     -v "$(pwd)/CLAUDE.md":/home/claude/.claude/CLAUDE.md \
     -v "$(pwd)/../vibes":/home/claude/vibes \
     -v "$(pwd)/skills":/home/claude/.claude/skills \

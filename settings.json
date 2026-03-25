@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Reread ~/.claude/CLAUDE.md now — context was just compacted."
+          }
+        ]
+      }
+    ]
+  }
+}
