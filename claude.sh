@@ -35,7 +35,7 @@ docker run -it \
     -v "$(pwd)/instances/${INSTANCE_NAME}":/home/claude/.claude \
     -v "$(pwd)/CLAUDE.md":/home/claude/.claude/CLAUDE.md \
     -v "$(pwd)/../vibes":/home/claude/vibes \
-    -v "$(pwd)/skills":/home/claude/skills \
+    -v "$(pwd)/skills":/home/claude/.claude/skills \
     --rm \
     claude-env:latest \
     claude
