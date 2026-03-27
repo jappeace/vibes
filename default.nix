@@ -38,20 +38,22 @@ let
     ];
   };
 
-  piper-ryan-voice = pkgs.fetchgit {
-    url = "https://huggingface.co/rhasspy/piper-voices";
-    rev = "834f23262168a7e809179465e4113f23f5a7d1f7";
-    hash = "sha256-55OHFCO5lQl8XMiqvzA+IhjwpUiUB8gtho2QUfLXX+c=";
-    fetchLFS = true;
-    sparseCheckout = [
-      "en/en_US/ryan/medium/en_US-ryan-medium.onnx"
-      "en/en_US/ryan/medium/en_US-ryan-medium.onnx.json"
-    ];
+  cabal-voice-src = pkgs.fetchFromGitHub {
+    owner = "jappeace-sloth";
+    repo = "cabal-voice";
+    rev = "06749ad16f367c57ec8483982892e4d4943de4eb";
+    hash = "sha256-Kaud6XcNWuAMwC3bU1O4WuqMi6tVM313nvSU3lVw1SY=";
   };
+
+  piper-cabal-voice = pkgs.runCommand "piper-cabal-voice" {} ''
+    mkdir -p $out/en/en_US/cabal/medium
+    cp ${cabal-voice-src}/en_US-cabal-medium.onnx $out/en/en_US/cabal/medium/
+    cp ${cabal-voice-src}/en_US-cabal-medium.onnx.json $out/en/en_US/cabal/medium/
+  '';
 
   piper-voices = pkgs.symlinkJoin {
     name = "piper-voices";
-    paths = [ piper-amy-voice piper-joe-voice piper-ryan-voice ];
+    paths = [ piper-amy-voice piper-joe-voice piper-cabal-voice ];
   };
 
   piper = pkgs.writeShellScriptBin "piper" ''
@@ -95,6 +97,7 @@ pkgs.dockerTools.buildImage {
       pkgs.cowsay
       pkgs.vlc
       piper
+      pkgs.sox
       pkgs.util-linux
       pkgs.jq
     ];
