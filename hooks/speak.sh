@@ -4,7 +4,21 @@
 INPUT=$(cat)
 echo "$(date): Hook invoked" >> /tmp/speak_hook.log
 echo "INPUT: $INPUT" >> /tmp/speak_hook.log
-SUMMARY=$(echo "$INPUT" | jq -r '.last_assistant_message // empty' | head -c 500)
+# Strip markdown formatting so TTS doesn't read asterisks, hashes, etc.
+# Filter markdown first, then truncate to avoid cutting mid-syntax.
+SUMMARY=$(echo "$INPUT" | jq -r '.last_assistant_message // empty' \
+  | sed 's/```[^`]*```//g' \
+  | sed 's/`[^`]*`//g' \
+  | sed 's/\*\*\*//g' \
+  | sed 's/\*\*//g' \
+  | sed 's/\*//g' \
+  | sed 's/^##* //g' \
+  | sed 's/^- /  /g' \
+  | sed -E 's/^[0-9]+\. /  /g' \
+  | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
+  | sed 's/^> //g' \
+  | head -c 500 \
+  )
 echo "SUMMARY: $SUMMARY" >> /tmp/speak_hook.log
 
 if [ -z "$SUMMARY" ]; then
