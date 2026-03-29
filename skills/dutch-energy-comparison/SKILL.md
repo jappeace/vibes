@@ -17,7 +17,8 @@ can act on immediately.
 ## User profile
 
 - Location: Netherlands, corner house (hoekwoning), no solar panels
-- Default consumption: 176 kWh/month electricity, 100 m3/month gas
+- Postcode: 8262AN, house number: 38
+- Default consumption: 1,112 kWh peak + 1,000 kWh off-peak (2,112 kWh/year), 1,200 m3 gas/year
 - Override with arguments: `$0` = electricity kWh/month, `$1` = gas m3/month
 - Strategy: switch provider every year to maximize welkomstbonus/loyaliteitsbonus
 
@@ -26,125 +27,104 @@ can act on immediately.
 The last report (March 2026) is at `/home/claude/vibes/energy-report/`.
 Read it first to understand the baseline and see what changed since last time.
 
+## CRITICAL: Use keuze.nl URL parameters for verified data
+
+**Most comparison sites only show "up to" bonus amounts that are wildly inflated.**
+Budget Energie advertised "up to €590" but gave €0 at this consumption level.
+Essent advertised "up to €500" but gave €100.
+
+The ONLY reliable method is keuze.nl, which accepts URL parameters and returns
+verified, all-in pricing for the exact address and consumption:
+
+```
+https://www.keuze.nl/energie/aanvragen?postcode=8262AN&nr=38&electricity=1112&electricityOffPeak=1000&noGas=false&gas=1200&manualInputStep=true
+```
+
+This returns ALL providers with:
+- Exact monthly/yearly cost (all-in: network, taxes, standing charges, everything)
+- Verified cashback amount at the user's consumption level
+- Yearly cost without discount (= gross)
+
+**Use this as the primary data source.** Other sites are secondary/unverified.
+
 ## Research procedure
 
-Follow these steps in order. Do not skip any — the pitfalls section explains why.
+### Step 1: Fetch keuze.nl verified data (PRIMARY SOURCE)
 
-### Step 1: Gather current fixed 1-year rates
+Construct the URL with the user's details:
+```
+https://www.keuze.nl/energie/aanvragen?postcode={POSTCODE}&nr={HOUSE_NUMBER}&electricity={PEAK_KWH}&electricityOffPeak={OFFPEAK_KWH}&noGas=false&gas={GAS_M3}&manualInputStep=true
+```
 
-For each provider, collect the **all-in** €/kWh and €/m3 (energy tax + ODE + 21% VAT included).
-Use these sources (fetch with WebFetch or WebSearch):
+Fetch this URL and extract ALL offers. For each, record:
+- Provider name and contract type
+- Monthly cost (includes cashback spread)
+- Yearly cost (= net)
+- Cashback amount
+- Yearly without discount (= gross, all-in)
 
-| Source | What it has | URL pattern |
+This gives you verified, personalized pricing. No guesswork needed.
+
+### Step 2: Cross-reference other sites (SECONDARY, unverified)
+
+Other sites may show different (higher) bonus amounts but require interactive
+forms. Fetch what you can, but flag unverified amounts clearly:
+
+| Source | What it has | Reliability |
 |--------|------------|-------------|
-| energievergelijk.nl | All-in rates, cheapest ranking | energievergelijk.nl/energieprijzen |
-| easyswitch.nl | Per-provider electricity rates | easyswitch.nl/energieprijzen/stroomprijs/ |
-| easyswitch.nl | Per-provider gas rates | easyswitch.nl/energieprijzen/gasprijs/ |
-| gaslicht.com | Rate comparison | gaslicht.com |
+| energieaanbiedingen.nu | Bonus listings per provider | Shows "up to" amounts, not personalized |
+| energie-aanbiedingen.com | Bonus listings + rates | Has "tot" amounts, unverified |
+| easyswitch.nl | Rates + some bonuses | Default consumption, not personalized |
+| gaslicht.com | Top 5 offers with bonuses | Requires JS form for personalized results |
+| energiecashback.nl | Cashback amounts | Unverified |
+| energiehunter.nl | Cashback amounts | Unverified |
 
-Cross-reference at least 2 sources. If rates differ by more than €0.01/kWh or €0.05/m3,
-investigate which is more recent.
-
-### Step 2: Gather fixed 3-year rates
-
-Source: `easyswitch.nl/energiecontract/vast/3-jaar/` and `energievergelijk.nl`.
-Not all providers offer 3-year contracts.
-
-### Step 3: Gather variable rates (for reference only)
-
-Same sources. Variable rates change monthly, so note the date prominently.
-
-### Step 4: Gather per-channel bonus amounts
-
-This is the most critical and time-consuming step. The same provider can offer
-€0 bonus (direct sign-up) vs €590 (via keuze.nl). You MUST check each channel.
-
-**Channels to check** (in order of typical bonus size):
-
-1. keuze.nl
-2. energieaanbiedingen.nu
-3. energie-aanbiedingen.com
-4. easyswitch.nl
-5. gaslicht.com
-6. energiecashback.nl
-7. energiehunter.nl
-8. Direct (provider website)
-
-**How to get bonus amounts:**
-- Visit each comparison site and look for the welkomstbonus/cashback column
-- Enter the user's postal code and consumption if the site requires it
-- Note whether the bonus is cash, gift card, or credit — only count cash/credit
-- Note if the bonus is "up to" (tot) — these are consumption-dependent (staffels)
-
-**Providers to check** (major Dutch providers):
-Greenchoice, Vattenfall, Budget Energie, Innova Energie, Eneco, Vandebron,
-Essent, Energiedirect, Engie, Oxxio, Delta Energie, Clean Energy,
-United Consumers, Mega, Coolblue Energie
-
-### Step 5: Calculate gross annual cost
-
-For each provider:
-```
-Gross Annual = (annual_kWh × €/kWh) + (annual_m3 × €/m3) + €72 standing charge
-```
-
-Standing charge (vaste leveringskosten) is ~€72/year (~€6/month). Check actual
-amounts per provider if available, but the difference is small (€60-85 range).
-
-Network costs (netbeheerkosten) are ~€700/year and identical across providers.
-Exclude from comparison but mention in the bill breakdown.
-
-### Step 6: Calculate net year-1 cost
-
-```
-Net Year 1 = Gross Annual - Best Bonus (from best channel)
-```
-
-### Step 7: Build the report
+### Step 3: Build the report
 
 Output to `/home/claude/vibes/energy-report/energy-comparison-<month>-<year>.md`.
-Also create/update `bonus-per-channel.csv` with the full matrix.
 
 Report structure:
-1. Consumption summary
-2. How bonuses work (copy the explanation — users need this context)
-3. Fixed 1-year contracts: ranked by net year-1, with per-channel bonus table
-4. Fixed 3-year contracts: ranked by gross annual
-5. Annual switching strategy: 3-year rotation plan using different providers
+1. How bonuses work (critical context)
+2. Fixed 1-year contracts: ranked by verified net cost from keuze.nl
+3. "Up to" vs reality comparison table
+4. Fixed 3-year contracts: ranked by net 3-year total from keuze.nl
+5. Annual switching vs 3-year fixed comparison
 6. Variable contracts: for reference only
 7. Overall recommendation
-8. Bill breakdown: monthly payment vs year-end bonus settlement
-9. Important notes and caveats
-10. Sources with dates
+8. Bill breakdown: monthly payment vs year-end bonus
+9. Unverified bonuses from other sites (clearly flagged)
+10. Sign-up links (keuze.nl personalized link + all channels)
+11. Sources with dates
 
 ## Pitfalls — lessons learned the hard way
 
-### 1. Comparison sites inflate bonuses
+### 1. "Up to" bonuses are DRASTICALLY inflated — not 10-15%, more like 50-100%
 
-The bonus shown on gaslicht.com or keuze.nl is NOT just the provider's loyaliteitsbonus.
-It often includes:
-- The comparison site's own referral commission
-- "Actiekorting" that may be temporary
-- Rounded-up "up to" amounts for the highest consumption tier
+In March 2026, verified with the user's actual address on keuze.nl:
 
-The ANWB called this "een sigaar uit eigen doos" (a cigar from your own box) — the
-provider raises rates to fund the bonus. Still worth taking, but don't optimize
-purely on bonus size.
+| Provider | Headline "up to" | Real cashback | Difference |
+|----------|----------------:|-------------:|----------:|
+| Budget Energie | €590 | **€0** | -100% |
+| Essent | €500 | **€100** | -80% |
+| Energiedirect | €500 | **€50** | -90% |
+| Vattenfall | €400 | **€260** | -35% |
+| Greenchoice | €350 | **€350** | 0% |
 
-### 2. Bonuses vary enormously by sign-up channel
+NEVER use "up to" amounts in calculations. ALWAYS verify with actual address.
+Only Greenchoice delivered its advertised amount. The rest were fantasy.
 
-In March 2026, Budget Energie offered:
-- €0 via their own website
-- €320 via gaslicht.com
-- €590 via keuze.nl
+### 2. This completely changes the recommendation
 
-That's a €590 difference for the exact same contract. ALWAYS check all channels.
+With "up to" bonuses, annual switching appeared to save €492 over 3 years vs a
+3-year fixed contract. With REAL bonuses, the 3-year fixed (Innova) was actually
+€83 CHEAPER than annual switching. The entire strategy flipped.
 
-### 3. Bonuses are consumption-dependent (staffels)
+### 3. Bonuses vary by sign-up channel — but less than advertised
 
-"Up to €590" is for high-consumption households. At 2,112 kWh + 1,200 m3, expect
-the actual bonus to be 10-15% less than the headline "up to" figure. The exact
-amount is only confirmed when you enter your details on the sign-up page.
+keuze.nl is the best verified source because it accepts URL parameters.
+Other sites (energieaanbiedingen.nu, easyswitch.nl) show higher bonuses
+but we could not verify them at the user's consumption level. They may be
+just as inflated as the headline amounts.
 
 ### 4. No renewal required for bonus
 
