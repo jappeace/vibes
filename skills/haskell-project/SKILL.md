@@ -128,6 +128,14 @@ When scaffolding a new Haskell project:
 4. Note: `hpkgs.nix` uses a nix name (e.g. `my-project`) that may differ from the cabal package name
 5. Verify: `nix-build` and `nix-shell --run "cabal test"`
 
+**IMPORTANT — Repository setup**: New projects get their **own repository**. Do NOT
+open a PR back to `jappeace/haskell-template-project`. Instead:
+
+1. Create a new repo: `gh repo create <owner>/<project-name> --public`
+2. Initialize git locally, commit the scaffolded code
+3. Push to the new repo's `master` branch
+4. For subsequent feature work, branch from master and open PRs against the new repo
+
 ### Sub-libraries (when needed)
 
 ```cabal
