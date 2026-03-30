@@ -82,13 +82,43 @@ all of it.** Before touching any code, use AskUserQuestion to nail down:
 
 **DO NOT proceed to training until the user has confirmed accent intensity.**
 
-## Quick Start (after goal clarification)
+## Step 1: Trial Run (MANDATORY before full training)
+
+**Training takes 5-8 hours. If the ONNX export or any post-training step fails,
+you lose it all.** Always run a trial first to validate the entire pipeline.
+
+### Trial run procedure:
+
+1. Set `--max_epochs` to `base_epoch + 6` (e.g., 4185 for alba base at 4179)
+2. Set `--checkpoint-epochs 2` (save often during trial)
+3. Create an instance and run the full pipeline
+4. Verify ALL phases complete: deps, dataset, preprocess, training, ONNX export, accent test
+5. Look for `MARKER: TRAINING_DONE` in the logs
+6. Destroy the trial instance
+7. ONLY THEN create the full training run with `--max_epochs 8000`
+
+A trial run takes ~15-20 minutes and costs ~$0.10. This is nothing compared to
+the cost of losing a 6-hour training run to a post-training crash.
+
+### What the trial catches:
+
+- ONNX export crashes (caused 3 wasted training runs on Scottish TTS v2)
+- Missing dependencies
+- Dataset format issues
+- PL patching failures
+- Container process limits (onnxruntime thread exhaustion)
+- Disk space issues
+
+**DO NOT skip the trial run. It saved us from repeating the same failure 3 times.**
+
+## Quick Start (after goal clarification + trial)
 
 1. Prepare a training script (see [onstart-template.md](onstart-template.md))
-2. Rent an RTX 4090 on Vast.ai using `--entrypoint` mode (NOT SSH)
-3. Monitor with `vastai logs INSTANCE_ID`
-4. Download ONNX model when done
-5. Destroy instance
+2. **Run a trial** with max_epochs = base + 6 to validate the full pipeline
+3. Rent an RTX 4090 on Vast.ai using `--onstart-cmd` mode
+4. Monitor with `vastai logs INSTANCE_ID`
+5. Download ONNX model when done
+6. Destroy instance
 
 ## Architecture Decision: --entrypoint Mode
 
@@ -191,6 +221,7 @@ pip install 'pip==23.3.2'           # pip>=24.1 rejects PL metadata
 pip install 'numpy<2'               # numpy 2.0 removed np.Inf
 pip install pytorch-lightning==1.7.7 # Piper requires this exact version
 pip install torchmetrics==0.11.4    # _compare_version removed in newer
+pip install onnx                    # ONNX export needs this (NOT bundled with onnxruntime!)
 pip install cython                  # build_monotonic_align.sh needs it
 pip install librosa                 # piper_train.norm_audio needs it
 pip install piper-phonemize         # not auto-installed by piper
