@@ -48,5 +48,5 @@ It's good for cloning work in.
 - At the end of a task and it typechecks, run `nix-build nix/ci.nix` to ensure CI passes, if that doesn't exist run `cabal test`.
 - Commit your changes, message should contain the summary of the done work, the first line should be synopsis of that. At the end of the message include the prompt, also include the used tokens.
 - Push the changes, don't force push.
-- Open a pull request with the changes on github, you can target snoyberg/keter and winterland1989/mysql-haskell directly, otherwise make sure to target jappeace repository, or jappeace-sloth. 
+- Open a pull request with the changes on github, you can target snoyberg/keter and winterland1989/mysql-haskell directly, otherwise make sure to target jappeace repository, or jappeace-sloth if jappeace don't exist.
 - You're done once CI passes on github, if it doesn't trigger because it's out of sync, rebase then, you've to wait until it passes.
