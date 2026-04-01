@@ -15,10 +15,38 @@ import os
 import json
 import io
 import wave
-from piper import PiperVoice
+
+
+def extract_alignments(voice, text):
+    """Synthesize text and return (sample_rate, phoneme_list).
+
+    Phoneme list contains dicts with 'phoneme' and 'samples' keys.
+    BOS (^) and EOS ($) markers are filtered out.
+    """
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wav_file:
+        alignments = voice.synthesize_wav(
+            text, wav_file, include_alignments=True
+        )
+
+    sample_rate = voice.config.sample_rate
+    phonemes = []
+
+    if alignments:
+        for a in alignments:
+            if a.phoneme in ("^", "$"):
+                continue
+            phonemes.append({
+                "phoneme": a.phoneme,
+                "samples": a.num_samples,
+            })
+
+    return sample_rate, phonemes
 
 
 def main():
+    from piper import PiperVoice
+
     if len(sys.argv) < 2:
         print("Usage: echo 'text' | piper-align.py <json_path>", file=sys.stderr)
         sys.exit(1)
@@ -36,26 +64,7 @@ def main():
         sys.exit(1)
 
     voice = PiperVoice.load(model_path)
-
-    # Synthesize to an in-memory buffer (we only want alignment data)
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as wav_file:
-        alignments = voice.synthesize_wav(
-            text, wav_file, include_alignments=True
-        )
-
-    sample_rate = voice.config.sample_rate
-    phonemes = []
-
-    if alignments:
-        for a in alignments:
-            # Skip BOS (^) and EOS ($) markers
-            if a.phoneme in ("^", "$"):
-                continue
-            phonemes.append({
-                "phoneme": a.phoneme,
-                "samples": a.num_samples,
-            })
+    sample_rate, phonemes = extract_alignments(voice, text)
 
     with open(json_path, "w") as f:
         json.dump({"sample_rate": sample_rate, "phonemes": phonemes}, f)
