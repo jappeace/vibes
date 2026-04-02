@@ -95,7 +95,6 @@ let
       pkgs.which
       pkgs.claude-code
       pkgs.cowsay
-      pkgs.vlc
       piper
       pkgs.sox
       pkgs.util-linux
