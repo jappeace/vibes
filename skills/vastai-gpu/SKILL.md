@@ -247,13 +247,65 @@ vastai destroy instance INSTANCE_ID
 
 13. **fakeNss vs custom passwd**: Nix's `dockerTools.fakeNss` provides a read-only `/etc/passwd` with only root and nobody. If you need additional users (like sshd), create passwd/group manually in `extraCommands` instead of using fakeNss.
 
+14. **Flash attention OOM during CUDA builds**: Flash attention backward pass CUDA kernels each need ~15GB RAM to compile. On 32GB hosts, even `NIX_BUILD_CORES=2` will OOM. **Disable flash attention** via Python overlay if your model doesn't need it (most TTS/VITS models don't):
+    ```nix
+    overlays = [
+      (final: prev: {
+        python3 = prev.python3.override {
+          packageOverrides = pyFinal: pyPrev: {
+            torch = pyPrev.torch.overrideAttrs (old: {
+              env = (old.env or {}) // { USE_FLASH_ATTENTION = "0"; };
+            });
+          };
+        };
+        onnxruntime = prev.onnxruntime.overrideAttrs (old: {
+          cmakeFlags = (old.cmakeFlags or []) ++ [
+            (prev.lib.cmakeBool "onnxruntime_USE_FLASH_ATTENTION" false)
+            (prev.lib.cmakeBool "onnxruntime_USE_MEMORY_EFFICIENT_ATTENTION" false)
+          ];
+        });
+      })
+    ];
+    ```
+    Both torch AND onnxruntime have flash attention kernels. Must disable in both.
+
+15. **Vast.ai .bashrc breaks SSH/SCP**: Vast.ai may inject `tmux` or other commands into `/root/.bashrc`. If the command isn't available (e.g., Nix images don't have tmux), SSH commands and SCP fail silently. Fix: `ssh ... 'echo "" > /root/.bashrc'`. Alternative: transfer files via base64 encoding instead of SCP:
+    ```bash
+    B64=$(base64 -w0 local_file.sh)
+    ssh ... "echo $B64 | base64 -d > /root/remote_file.sh"
+    ```
+
+16. **Private GHCR images on Vast.ai**: Use `--login` flag when creating instance:
+    ```bash
+    vastai create instance OFFER_ID --image ghcr.io/ORG/IMAGE:TAG --disk 100 --ssh \
+      --login "-u USERNAME -p GHCR_TOKEN ghcr.io"
+    ```
+
+17. **Piper + PL 2.x compatibility**: Piper was written for PL 1.7.7. Nixpkgs has PL 2.6.1. Must patch:
+    - `automatic_optimization = False` + manual optimizer stepping (multi-optimizer GAN training)
+    - Remove `optimizer_idx` from `training_step`
+    - Use `Trainer()` directly instead of `from_argparse_args`
+    - Pass `weights_only=False` to `trainer.fit()` for old checkpoints
+    - See `onstart-nix.sh` for complete patch script
+
+18. **Piper preprocessing batch_size=0 crash**: `batch_size = num_utterances / (max_workers * 2)`. With small datasets and many CPUs, this rounds to 0. Fix: `--max-workers N` where N = max(1, num_utterances / 4).
+
+19. **Monotonic align Cython build**: The official build method is:
+    ```bash
+    cd piper_train/vits/monotonic_align
+    mkdir -p monotonic_align
+    cythonize -i core.pyx
+    mv core*.so monotonic_align/
+    ```
+    Do NOT use `setup.py build_ext --inplace` — it puts the .so in the wrong place. GCC must be on PATH; find it from nix store build deps.
+
 ## Typical Workflow
 
 1. Install CLI, configure API key
 2. Search offers, create instance
 3. Poll `show instances` until status is `running`
 4. Register SSH key with `create ssh-key` and `attach ssh`
-5. Upload data/scripts via SCP
+5. Upload data/scripts via SCP (or base64 if SCP broken)
 6. Run training via `nohup`, monitor with `tail`
 7. Download results via SCP
 8. Destroy instance immediately
