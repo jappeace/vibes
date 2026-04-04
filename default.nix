@@ -109,6 +109,41 @@ let
       pkgs.util-linux
       pkgs.jq
       pkgs.openssh
+      (pkgs.runCommand "setup-env" {} ''
+    # Create necessary directories (added var/empty for nixbld users)
+
+    mkdir -p $out/home/claude $out/tmp $out/var/empty
+    mkdir -p $out/etc/nix
+
+    # Write config files directly into the image filesystem rather than
+    # as symlinks to nix store paths. Store symlinks created by writeTextDir
+    # break when nix GC runs inside the container.
+    cp ${./nix.conf} $out/etc/nix/nix.conf
+    cp ${./builder-ssh-config} $out/etc/nix/builder-ssh-config
+    cp ${systemPasswd} $out/etc/passwd
+
+    cat > $out/etc/nsswitch.conf << 'NSSWITCH'
+    passwd:    files
+    group:     files
+    shadow:    files
+    NSSWITCH
+
+    cat > $out/etc/group << 'GROUP'
+    root:x:0:
+    claude:x:100:
+    nixbld:x:30000:claude
+    GROUP
+
+    cat > $out/etc/gitconfig << 'GITCONFIG'
+    [user]
+      name = jappeace-sloth
+      email = sloth@jappie.me
+    GITCONFIG
+
+    # Set permissions
+    chown -R ${toString uid}:${toString gid} $out/home/claude
+    chmod 1777 $out/tmp
+  '')
     ];
     pathsToLink = [ "/" ];
   };
@@ -120,39 +155,6 @@ in
 pkgs.dockerTools.buildImage {
   name = "claude-env";
   tag = "latest";
-  extraCommands = ''
-    # Create necessary directories (added var/empty for nixbld users)
-    mkdir -p home/claude etc/nix tmp var/empty
-
-    # Write config files directly into the image filesystem rather than
-    # as symlinks to nix store paths. Store symlinks created by writeTextDir
-    # break when nix GC runs inside the container.
-    cp ${./nix.conf} etc/nix/nix.conf
-    cp ${./builder-ssh-config} etc/nix/builder-ssh-config
-    cp ${systemPasswd} etc/passwd
-
-    cat > etc/nsswitch.conf << 'NSSWITCH'
-    passwd:    files
-    group:     files
-    shadow:    files
-    NSSWITCH
-
-    cat > etc/group << 'GROUP'
-    root:x:0:
-    claude:x:100:
-    nixbld:x:30000:claude
-    GROUP
-
-    cat > etc/gitconfig << 'GITCONFIG'
-    [user]
-      name = jappeace-sloth
-      email = sloth@jappie.me
-    GITCONFIG
-
-    # Set permissions
-    chown -R ${toString uid}:${toString gid} home/claude
-    chmod 1777 tmp
-  '';
 
   copyToRoot = env;
 
