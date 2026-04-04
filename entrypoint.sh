@@ -6,10 +6,12 @@ rm -f /nix/var/nix/daemon-socket/socket
 mkdir -p /var/log/nix/
 
 # Set up root SSH for nix remote builds to host
+# builder-ssh-config is baked into the image at /etc/nix/builder-ssh-config
+# builder_key is mounted at runtime (it's a secret)
 mkdir -p /root/.ssh
 cp /tmp/builder_key /root/.ssh/builder_key
 chmod 600 /root/.ssh/builder_key
-cp /tmp/builder-ssh-config /root/.ssh/config
+cp /etc/nix/builder-ssh-config /root/.ssh/config
 chmod 600 /root/.ssh/config
 
 (
