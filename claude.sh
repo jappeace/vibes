@@ -80,7 +80,7 @@ docker volume rm "${INSTANCE_NAME}-tmp" 2>/dev/null || true
 # Run the container
 docker run -it \
     "${DOCKER_PLATFORM_ARGS[@]}" \
-    -v "${INSTANCE_NAME}-tmp:/tmp" \
+    --tmpfs /tmp:rw,exec,mode=1777 \
     --init \
     --dns 8.8.8.8 \
     --add-host=host.docker.internal:host-gateway \
