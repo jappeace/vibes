@@ -45,15 +45,13 @@ NIX_ARGS="./default.nix --arg uid $(id -u) --arg gid $(id -g) --argstr voiceName
 
 if [ "$OS_NAME" != "Darwin" ]; then
     # on linux we can do this normally
-    # build all things first, all paths are available on the host
-    nix-build $NIX_ARGS
-    # 1A. Linux Native: Build and load normally
-    docker load -i "$(nix-build $NIX_ARGS -A image)"
+    # streamLayeredImage produces a script that streams the image to stdout
+    $(nix-build $NIX_ARGS -A image) | docker load
 
 else
     # osx we've to build for linux, to do that we borrow dockers' running linux
 
-    # 1B. macOS: Build inside a Linux Nix container to bypass missing features
+    # macOS: Build inside a Linux Nix container to bypass missing features
     ARCH=$(uname -m)
 
     if [ "$ARCH" == "arm64" ]; then
@@ -62,22 +60,25 @@ else
         docker run --rm \
             -v nix-builder-cache:/nix \
             -v "$(pwd):/workspace" -w /workspace nixos/nix \
-            sh -c 'nix-build $NIX_ARGS -A image > /dev/null && cat result' | docker load
+            sh -c 'nix-build '"$NIX_ARGS"' -A image > /dev/null && $(cat result)' | docker load
     else
         # Intel Mac
         DOCKER_PLATFORM_ARGS=("--platform" "linux/amd64")
         docker run --platform linux/amd64 --rm \
                -v nix-builder-cache:/nix \
                -v "$(pwd):/workspace" -w /workspace nixos/nix \
-            sh -c 'nix-build $NIX_ARGS -A image > /dev/null && cat result' | docker load
+            sh -c 'nix-build '"$NIX_ARGS"' -A image > /dev/null && $(cat result)' | docker load
     fi
 fi
 
 
+# Clean stale tmp volume from previous runs
+docker volume rm "${INSTANCE_NAME}-tmp" 2>/dev/null || true
+
 # Run the container
 docker run -it \
     "${DOCKER_PLATFORM_ARGS[@]}" \
-    --tmpfs /tmp:rw,exec,mode=1777 \
+    -v "${INSTANCE_NAME}-tmp:/tmp" \
     --init \
     --dns 8.8.8.8 \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
