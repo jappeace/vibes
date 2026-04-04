@@ -75,7 +75,7 @@ fi
 # Run the container
 docker run -it \
     "${DOCKER_PLATFORM_ARGS[@]}" \
-    --tmpfs /tmp:rw,exec,mode=1777 \
+    -v "${INSTANCE_NAME}-tmp:/tmp" \
     --init \
     --dns 8.8.8.8 \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
