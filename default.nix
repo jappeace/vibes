@@ -98,6 +98,12 @@ let
     MODEL="''${PIPER_MODEL:-${selectedVoice}/en/en_US/${resolvedVoiceName}/medium/en_US-${resolvedVoiceName}-medium.onnx}"
     ${pkgs.piper-tts}/bin/piper -m "$MODEL" "$@"
   '';
+
+  # Baked-in config files (avoids runtime mounts for static content)
+  nixConf = pkgs.writeTextDir "etc/nix/nix.conf" (builtins.readFile ./nix.conf);
+  builderSshConfig = pkgs.writeTextDir "etc/nix/builder-ssh-config" (builtins.readFile ./builder-ssh-config);
+  entrypoint = pkgs.writeScript "entrypoint" (builtins.readFile ./entrypoint.sh);
+
   env = pkgs.buildEnv {
     name = "image-root";
     paths = [
@@ -105,6 +111,8 @@ let
       systemPasswd
       systemGroup
       systemGitConfig
+      nixConf
+      builderSshConfig
       pkgs.bashInteractive
       pkgs.coreutils
       pkgs.gh
@@ -125,6 +133,7 @@ let
       pkgs.sox
       pkgs.util-linux
       pkgs.jq
+      pkgs.openssh
     ];
     pathsToLink = [ "/" ];
   };
@@ -149,7 +158,7 @@ pkgs.dockerTools.streamLayeredImage {
   '';
 
   config = {
-    Entrypoint = [ "${pkgs.claude-code}/bin/claude" ];
+    Entrypoint = [ "${entrypoint}" ];
     Env = [
       "HOME=/home/claude"
       "USER=claude"
