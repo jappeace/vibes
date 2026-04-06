@@ -18,8 +18,8 @@ Important: after each conversation compacting reread CLAUDE.md
 - To read a specific module's documentation on Hackage:
   `w3m -dump https://hackage.haskell.org/package/<package_name>/docs/<Module-Name-With-Dashes>.html`
 
-The vibes folder is shared between the host and other instances. 
-It's good for cloning work in.
+The vibes folder is per-instance (mounted from `../vibes/$INSTANCE_NAME`).
+Each instance has its own project clones so two instances can work on the same project simultaneously.
 
 # Style
 - Avoid using wildcards on pattern matching if possible, always write out all cases.

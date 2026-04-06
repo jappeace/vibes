@@ -99,7 +99,7 @@ docker run -it \
     -v "$(pwd)/CLAUDE.md":/home/claude/.claude/CLAUDE.md \
     -v "/run/user/$(id -u)/pulse:/run/user/1000/pulse" \
     -e PULSE_SERVER="unix:/run/user/1000/pulse/native" \
-    -v "$(pwd)/../vibes":/home/claude/vibes \
+    -v "$(pwd)/../vibes/$INSTANCE_NAME":/home/claude/vibes \
     -v "$(pwd)/skills":/home/claude/.claude/skills \
     -v "$(pwd)/character":/home/claude/character \
     -v "$(pwd)/hooks":/home/claude/.claude/hooks \
