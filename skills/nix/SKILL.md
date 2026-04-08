@@ -331,6 +331,204 @@ When cross-compiling, package configs may need fixing:
 - Cabal sub-libraries (e.g. `attoparsec:attoparsec-internal`) produce
   separate `.a` files under `l/SUBLIB/build/` — often missed by install scripts
 
+## The callPackage Pattern
+
+The fundamental idiom in nixpkgs. Understand this before anything else.
+
+```nix
+# callPackage auto-injects arguments from pkgs/lib by name:
+# my-package.nix
+{ stdenv, fetchFromGitHub, zlib }:   # <- these get filled in automatically
+stdenv.mkDerivation { ... }
+
+# default.nix
+let pkgs = import <nixpkgs> {};
+in pkgs.callPackage ./my-package.nix {}
+#                                    ^^ override args here if needed
+# e.g. pkgs.callPackage ./my-package.nix { zlib = pkgs.zlib-ng; }
+```
+
+`callPackage` makes packages composable — each `.nix` file declares its deps
+as function args, and the caller auto-fills them from the package set.
+
+## Fetcher Patterns
+
+```nix
+# Fetch from GitHub (most common for open-source deps)
+src = pkgs.fetchFromGitHub {
+  owner = "user";
+  repo = "project";
+  rev = "v1.0";       # tag, branch, or commit hash
+  sha256 = "";        # leave empty first, nix will tell you the correct hash
+  # sha256 = lib.fakeSha256;  # alternative placeholder
+};
+
+# Fetch a tarball
+src = pkgs.fetchurl {
+  url = "https://example.com/foo-1.0.tar.gz";
+  sha256 = "";
+};
+
+# Fetch and unpack a zip/tarball (auto-strips single top-level dir)
+src = pkgs.fetchzip {
+  url = "https://example.com/foo-1.0.zip";
+  sha256 = "";
+};
+
+# Fetch a git repo (when you need submodules or specific git features)
+src = pkgs.fetchgit {
+  url = "https://github.com/user/project.git";
+  rev = "abc123";
+  sha256 = "";
+  fetchSubmodules = true;  # if needed
+};
+```
+
+**Getting the hash**: Run with empty `sha256 = ""` or `lib.fakeSha256`,
+the build will fail and print the correct hash. Copy it in.
+
+## Trivial Builders
+
+Quick ways to create derivations without a full `mkDerivation`:
+
+```nix
+# Create a script on PATH
+pkgs.writeShellScriptBin "my-tool" ''
+  echo "Hello from $0"
+  ${pkgs.curl}/bin/curl "$@"
+'';
+
+# Create an arbitrary text file in the store
+pkgs.writeText "my-config.json" (builtins.toJSON { key = "value"; });
+
+# Run a shell command as a derivation (result is a store path)
+pkgs.runCommand "my-output" { nativeBuildInputs = [ pkgs.jq ]; } ''
+  echo '{"a":1}' | jq .a > $out
+'';
+
+# Combine multiple packages into one (merge their /bin, /lib, etc.)
+pkgs.symlinkJoin {
+  name = "my-tools";
+  paths = [ pkgs.git pkgs.gh pkgs.jq ];
+};
+```
+
+## Python Packaging
+
+```nix
+# Use Python with specific packages (most common pattern)
+pkgs.python3.withPackages (ps: [ ps.requests ps.numpy ])
+# Note: some packages like piper-tts live at pkgs.piper-tts (top-level),
+# not in python3Packages. Use: pkgs.python3.withPackages (_ps: [ pkgs.piper-tts ])
+
+# Build a Python package from source
+pkgs.python3Packages.buildPythonPackage {
+  pname = "my-pkg";
+  version = "1.0";
+  src = ./.;
+  propagatedBuildInputs = [ pkgs.python3Packages.requests ];
+  # propagatedBuildInputs: deps that should also be available to downstream consumers
+  # nativeBuildInputs: build-time only (setuptools, wheel, etc.)
+  nativeBuildInputs = [ pkgs.python3Packages.setuptools ];
+};
+
+# Build a Python application (not importable, just runnable)
+pkgs.python3Packages.buildPythonApplication {
+  pname = "my-app";
+  version = "1.0";
+  src = ./.;
+  propagatedBuildInputs = [ pkgs.python3Packages.click ];
+};
+```
+
+## Propagated vs Non-Propagated Inputs
+
+```nix
+pkgs.stdenv.mkDerivation {
+  # buildInputs: available at build time only
+  buildInputs = [ pkgs.zlib ];
+
+  # nativeBuildInputs: build tools that run on the BUILD machine
+  # (critical distinction for cross-compilation)
+  nativeBuildInputs = [ pkgs.cmake pkgs.pkg-config ];
+
+  # propagatedBuildInputs: also made available to downstream consumers
+  # Use for: shared libraries, Python deps, anything a dependent needs at runtime
+  propagatedBuildInputs = [ pkgs.openssl ];
+};
+```
+
+Rule of thumb: if removing a dep from `buildInputs` causes downstream
+packages to break, it should be `propagatedBuildInputs` instead.
+
+## Store Management & Garbage Collection
+
+```bash
+# Delete old generations and garbage collect (frees disk space)
+nix-collect-garbage -d
+
+# Delete generations older than 30 days
+nix-collect-garbage --delete-older-than 30d
+
+# Show store path size and dependencies
+nix path-info -sS /nix/store/<hash>-<name>
+
+# Show closure size (total size including all deps)
+nix path-info -rsSh /nix/store/<hash>-<name>
+
+# Why is this path in the store? (find reverse dependencies)
+nix-store --query --referrers /nix/store/<hash>-<name>
+```
+
+## Interactive Exploration with nix repl
+
+```bash
+# Start a repl with nixpkgs loaded
+nix repl '<nixpkgs>'
+
+# Inside the repl:
+# Tab-complete to explore: pkgs.python3Packages.<TAB>
+# :t expr    — show type
+# :p expr    — pretty-print
+# :q         — quit
+```
+
+## nix-shell Tips
+
+```bash
+# Run a single command in a nix-shell without entering interactive mode
+nix-shell --run "cabal build"
+nix-shell --command "ghci"
+
+# Quick ad-hoc shell with specific packages (no shell.nix needed)
+nix-shell -p python3 nodejs git
+
+# Pure shell (no host env leaking in — closer to CI)
+nix-shell --pure
+
+# Shell with a specific nixpkgs
+nix-shell -I nixpkgs=/path/to/nixpkgs
+```
+
+## Binary Cache Configuration
+
+In `/etc/nix/nix.conf` or `~/.config/nix/nix.conf`:
+```
+# Add extra binary caches (substituters)
+substituters = https://cache.nixos.org https://my-cache.cachix.org
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= my-cache.cachix.org-1:XXXX=
+
+# Useful for CI: don't fail if a cache is unreachable
+connect-timeout = 5
+fallback = true
+```
+
+Cachix is the easiest way to set up a project-specific binary cache:
+```bash
+cachix use my-cache        # adds cache to nix.conf
+cachix push my-cache result # push a build result
+```
+
 ## Docker / Container Quirks
 
 - `/usr/bin/env` may not exist in Nix-based containers. Use `#!/bin/bash`

@@ -27,12 +27,14 @@ Each instance has its own project clones so two instances can work on the same p
 - If functions cause you confusion add documentation at the deceleration to clear up confusion.
 - Avoid generic names, use more specific names where possible. Keep them succinct.
 - Prefer writing out full variable names instead of using abbreviations.
+- Never introduce global mutable variables (e.g. IORef at top level, unsafePerformIO globals, top-level MVars/TVars). If you believe a global variable is truly necessary, ask the user for permission first.
 
 # Testing
 - A test should be less complex then the implementation.
 - Tests must assert behaviour and logic, not static content. Do not write tests that only verify text labels, column headings, or placeholder values exist — the compiler and type system already catch those.
 - A good test would fail if the logic were wrong. A bad test would only fail if you deleted or renamed a string literal.
 - We only test the current codebase, libraries are assumed to work.
+- Demo/test apps (e.g. imageDemoApp, scrollDemoApp) belong in test/ entry points, NOT in the library. Integration test entry points (test/*DemoMain.hs) should be self-contained — define the demo app inline rather than importing it from the library.
 
 # Decision Log                                                  
 - When making significant architectural choices (library selection, design patterns,
