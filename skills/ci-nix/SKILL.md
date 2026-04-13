@@ -247,6 +247,43 @@ npins pins are self-contained — `nix_path` is only needed when nix files use `
      uses: actions/upload-artifact@v4
    ```
 
+### Error visibility and retry discipline:
+
+6. **Errors must be loud and visible.** When a CI step fails, the actual error
+   message (exception, crash reason, missing library) must be printed prominently
+   in the output — not buried in a logfile dump. Prefix fatal messages with
+   `FATAL:` so retry loops and humans can spot them instantly.
+
+7. **Only retry flaky parts, never deterministic failures.** Retries are for
+   transient issues (emulator boot timing, network hiccups). If a failure is
+   deterministic (library not found, compilation error, missing dependency),
+   detect it and fail immediately instead of burning through N retries:
+   ```yaml
+   # Bad: retries a fundamentally broken test 10 times
+   for attempt in $(seq 1 10); do ./test.sh || sleep 5; done
+   # Good: test script detects fatal vs flaky, retry loop respects it
+   if grep -q "^FATAL:" "$log_file"; then
+       echo "Fatal error — not retrying"; exit 1
+   fi
+   ```
+
+8. **Always use `set -o pipefail` in CI run blocks that pipe through `tee`.**
+   Without it, `cmd | tee log` always returns 0 (from `tee`), silently masking
+   failures. GitHub Actions uses `bash -e` by default but does NOT enable
+   `pipefail`. This has caused real bugs where broken builds reported success.
+   ```yaml
+   - name: Run test
+     run: |
+       set -o pipefail
+       ./test.sh 2>&1 | tee test.log
+   ```
+
+9. **Test scripts should distinguish fatal from flaky failures.** When a test
+   detects an unrecoverable error (e.g. app crashes on startup, native library
+   missing), it should print `FATAL: <reason>` and `exit 1` immediately rather
+   than continuing through subsequent checks that are guaranteed to fail.
+   The outer retry loop greps for `^FATAL:` and stops retrying.
+
 ## Local Testing
 
 ```bash
@@ -304,3 +341,10 @@ nix-instantiate --eval -E '(import ./nix/pin.nix).lib.version'
   a transient file-locking issue, not a real build failure. Check the actual error
   before assuming a dependency is broken. A single Windows job failing while all other
   platforms pass is a strong signal of flakiness.
+
+- **`cmd | tee` swallows exit codes**: In GitHub Actions `run:` blocks, bash uses
+  `set -e` but NOT `set -o pipefail`. So `./test.sh | tee log` returns 0 even when
+  `test.sh` fails — `tee` succeeds and that's all bash checks. Always add
+  `set -o pipefail` at the top of any run block that pipes output. This bug silently
+  passed broken builds in production (prrrrrrrrr PR #35: emulator test failed on every
+  check but CI reported success because the exit code came from `tee`).
