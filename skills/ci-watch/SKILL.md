@@ -6,7 +6,6 @@ description: >
   a specific workflow run. Prevents the common mistake of polling too
   frequently and exhausting the 5000 requests/hour GitHub API budget.
 argument-hint: "[PR-number-or-run-URL]"
-disable-model-invocation: true
 allowed-tools: Bash, Read
 ---
 
