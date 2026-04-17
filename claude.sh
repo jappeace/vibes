@@ -81,6 +81,7 @@ docker run -it \
     "${DOCKER_PLATFORM_ARGS[@]}" \
     --tmpfs /tmp:rw,exec,mode=1777 \
     --init \
+    --device /dev/kvm \
     --dns 8.8.8.8 \
     --add-host=host.docker.internal:host-gateway \
     -e NODE_OPTIONS="--dns-result-order=ipv4first" \
