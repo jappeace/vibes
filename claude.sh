@@ -45,7 +45,14 @@ fi
 
 # Claude Code reads MCP servers from ~/.claude.json (not settings.json).
 # Clear any stale per-project entries Claude Code writes during sessions.
-MCP_CONFIG='{"playwright":{"command":"playwright-mcp","args":["--headless","--no-sandbox","--isolated","--ignore-https-errors","--executable-path","/usr/local/bin/chromium"]},"hoogle":{"command":"mcp-hoogle","args":["serve"]},"tmux":{"command":"tmux-mcp-rs","args":[]}}'
+#
+# playwright is a shared HTTP sidecar (started in the entrypoints, see
+# default.nix playwrightSidecar) rather than a per-process stdio spawn, so the
+# main agent and the nested gate critics share one warm browser on
+# 127.0.0.1:9223. Keep that port in sync with default.nix and the entrypoints.
+# If a Claude Code version rejects "type":"http", the server also serves legacy
+# SSE at /sse ("type":"sse","url":"http://127.0.0.1:9223/sse").
+MCP_CONFIG='{"playwright":{"type":"http","url":"http://127.0.0.1:9223/mcp"},"hoogle":{"command":"mcp-hoogle","args":["serve"]},"tmux":{"command":"tmux-mcp-rs","args":[]}}'
 UPDATED_JSON=$(jq --argjson mcp "$MCP_CONFIG" 'del(.mcpServers) | .mcpServers = $mcp | if .projects then .projects |= map_values(del(.mcpServers)) else . end' "$INSTANCE_JSON")
 echo "$UPDATED_JSON" > "$INSTANCE_JSON"
 

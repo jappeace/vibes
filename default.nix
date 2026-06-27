@@ -82,6 +82,25 @@ let
   entrypoint = pkgs.writeScript "entrypoint" (builtins.readFile ./entrypoint.sh);
   dockerEntrypoint = pkgs.writeScript "docker-entrypoint" (builtins.readFile ./docker-entrypoint.sh);
 
+  # One shared Playwright MCP server per container, run as a sidecar by the
+  # entrypoints. Both the main agent and the nested gate critics connect to it
+  # over HTTP (see claude.sh MCP_CONFIG) instead of each cold-spawning its own
+  # chromium, so the critic gets a warm browser for evidence-gathering. Bound to
+  # loopback with the host check disabled (safe: not externally reachable). The
+  # port 9223 is mirrored in claude.sh MCP_CONFIG and the entrypoint readiness
+  # probe; keep the three in sync. Respawns if the server exits so it self-heals.
+  playwrightSidecar = pkgs.writeShellScriptBin "playwright-mcp-sidecar" ''
+    set -u
+    while true; do
+      ${playwrightMcp}/bin/playwright-mcp \
+        --port 9223 --host 127.0.0.1 --allowed-hosts '*' \
+        --headless --no-sandbox --isolated --ignore-https-errors \
+        --executable-path /usr/local/bin/chromium
+      echo "playwright-mcp-sidecar: server exited ($?), restarting in 2s" >&2
+      sleep 2
+    done
+  '';
+
   env = pkgs.buildEnv {
     name = "image-root";
     paths = [
@@ -109,6 +128,7 @@ let
       pkgs.openssh
       pkgs.iana-etc
       playwrightMcp
+      playwrightSidecar
       chromiumBin
       pkgs.tmux
       tmuxMcp
