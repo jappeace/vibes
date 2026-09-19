@@ -6,6 +6,15 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for d in \"$HOME\"/vibes/jappiesoft \"$HOME\"/vibes/*/jappiesoft; do if [ -x \"$d/sales/tracker-sessionstart.sh\" ]; then \"$d/sales/tracker-sessionstart.sh\"; break; fi; done; exit 0"
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
