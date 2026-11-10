@@ -101,6 +101,8 @@ let
 
   opencode = import ./opencode/package.nix { inherit pkgs; };
 
+  claudeCode = import ./claude-code/package.nix { inherit pkgs; };
+
   # The end-of-turn gate, compiled from ./gate. Replaces the old bash hook
   # trio (record-edit / reset-turn-state / stop-gate) with one binary exposing
   # `claude-gate record|reset|stop-gate`. justStaticExecutables keeps only the
@@ -134,7 +136,7 @@ let
       pkgs.gnused
       pkgs.gawk # awk, missing from coreutils
       pkgs.which
-      pkgs.claude-code
+      claudeCode
       opencode # open-source harness with ChatGPT/OpenAI login, launched with `--agent opencode`
       pkgs.cowsay
       pkgs.util-linux
