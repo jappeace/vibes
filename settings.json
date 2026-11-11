@@ -2,7 +2,7 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
-  "model": "claude-opus-5-5",
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -76,5 +76,6 @@
   },
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark"
+  "theme": "dark",
+  "switchModelsOnFlag": false
 }
