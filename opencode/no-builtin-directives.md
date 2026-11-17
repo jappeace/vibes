@@ -54,6 +54,8 @@ After pulling this change, rebuild the container environment using the normal
 launcher and restart OpenCode inside it. A running process keeps the old binary
 and its bundled prompts.
 
-When updating nixpkgs, the patch fails the build if its target text changed.
+OpenCode builds from the frozen `nixpkgs-opencode` pin (see `nixpkgs.nix`), not
+the image's main nixpkgs. When updating that pin, the patch fails the build if
+its target text changed.
 Regenerate it against the new source, and check the new prompt and tool files
 for directives in places the patch does not cover yet.

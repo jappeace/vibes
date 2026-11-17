@@ -30,8 +30,15 @@
       "type": "Channel",
       "name": "nixpkgs-unstable",
       "artifact": "nixexprs.tar.xz",
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1121398.1c872b8c508b/nixexprs.tar.xz",
+      "hash": "sha256-7UMJ2LMKsaR3dI6qM9mGxTQ0PrhawJYUf8DZvNpS2Lc="
+    },
+    "nixpkgs-opencode": {
+      "type": "Url",
       "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1092923.95b2dd0e78e6/nixexprs.tar.xz",
-      "hash": "sha256-TF4mt/HjbvrAgfl6dA5PDetqv/HHKvraFshP72XG434="
+      "unpack": true,
+      "hash": "sha256-TF4mt/HjbvrAgfl6dA5PDetqv/HHKvraFshP72XG434=",
+      "frozen": true
     },
     "tmux-mcp": {
       "type": "Git",

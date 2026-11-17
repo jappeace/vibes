@@ -1,7 +1,7 @@
-{ pkgs, claudeGate }:
+{ pkgs, sources, claudeGate }:
 let
   package = pkgs.lib.importJSON ./package.json;
-  opencode = import ./package.nix { inherit pkgs; };
+  opencode = import ./package.nix { pkgs = import ./nixpkgs.nix { inherit sources; }; };
   # Decision: typecheck against the published SDK matching the image's OpenCode
   # version, with npm integrity hashes imported into Nix. Handwritten API stubs
   # would hide upstream changes; type-only imports need no runtime dependencies.

@@ -2,6 +2,7 @@
 let
   sources = import ./npins/default.nix;
   pkgs = import sources.nixpkgs { config.allowUnfree = true; };
+  opencodePkgs = import ./opencode/nixpkgs.nix { inherit sources; };
   # passwd needs Nix interpolation for bashInteractive path, so use writeText
   systemPasswd = pkgs.writeText "passwd" ''
     root:x:0:0:System Tech Leadership:/root:/bin/sh
@@ -73,9 +74,9 @@ let
   # Decision: opencode's model catalogue (models.dev) comes from a pinned
   # checkout of the models.dev repo, built through nixpkgs' own models-dev
   # package with the source swapped for the npins pin. The nixpkgs snapshot
-  # is only refreshed when a maintainer bumps it (2026-10-02 in this pin),
-  # while the catalogue changes weekly; the pin is refreshed with
-  # `npins update models-dev` like every other pin here.
+  # is only refreshed when a maintainer bumps it (2026-10-02 in
+  # nixpkgs-opencode), while the catalogue changes weekly; the pin is
+  # refreshed with `npins update models-dev` like every other pin here.
   # The file is baked into the image at /etc/opencode/models.json and the
   # launcher points OPENCODE_MODELS_PATH at it with opencode's own fetch
   # disabled, because that fetch (a forked refresh holding a file lock)
@@ -85,7 +86,7 @@ let
   # (2) pkgs.opencode.override { models-dev = modelsDev; } to refresh the
   # snapshot embedded in the binary. Rejected: rebuilds opencode from source
   # with bun on every catalogue bump instead of taking the cached binary.
-  modelsDev = pkgs.models-dev.overrideAttrs (finalAttrs: old: {
+  modelsDev = opencodePkgs.models-dev.overrideAttrs (finalAttrs: old: {
     version = "unstable-${builtins.substring 0 7 sources.models-dev.revision}";
     src = sources.models-dev;
     passthru = old.passthru // {
@@ -99,7 +100,7 @@ let
     install -Dm644 ${modelsDev}/dist/_api.json $out/etc/opencode/models.json
   '';
 
-  opencode = import ./opencode/package.nix { inherit pkgs; };
+  opencode = import ./opencode/package.nix { pkgs = opencodePkgs; };
 
   # The end-of-turn gate, compiled from ./gate. Replaces the old bash hook
   # trio (record-edit / reset-turn-state / stop-gate) with one binary exposing

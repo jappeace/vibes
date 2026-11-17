@@ -17,7 +17,7 @@ in
   native = import ../default.nix { inherit hpkgs; };
 
   opencode = import ../../opencode/check.nix {
-    inherit pkgs;
+    inherit pkgs sources;
     claudeGate = hpkgs.claude-gate;
   };
 
