@@ -55,7 +55,7 @@ reviewModel phase = do
       inherited <- envStr "OPENCODE_GATE_MODEL" ""
       model <- envStr (openCodeModelVariable phase) (defaultOpenCodeModel phase inherited)
       if Text.null (Text.strip model) || not ("/" `Text.isInfixOf` model)
-        then ioError (userError "OpenCode reviewer has no provider/model. Restart with the updated stopgate plugin or set OPENCODE_GATE_MODEL to an available openai/model-id.")
+        then ioError (userError "OpenCode reviewer has no provider/model. Set OPENCODE_GATE_MODEL to an available openai/model-id.")
         else pure model
 
 defaultOpenCodeModel :: ReviewPhase -> Text -> Text

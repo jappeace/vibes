@@ -26,16 +26,17 @@ adapter was removed. The OpenCode reviewer backend below is kept for a port.
 ## Reviewer backends
 
 Claude Code hooks default to `CLAUDE_GATE_BACKEND=claude` and keep their existing
-Haiku, Opus, and Sonnet models. OpenCode's adapter passes
+Haiku, Opus, and Sonnet models. An OpenCode caller sets
 `CLAUDE_GATE_BACKEND=opencode`, `OPENCODE_GATE_MODEL=provider/model`, and
-`OPENCODE_GATE_VARIANT` from the worker's latest user message.
+`OPENCODE_GATE_VARIANT` from the worker's latest user message (the removed 1.x
+adapter did; a 2.x port has to).
 
 OpenCode launches a fresh `opencode run --format json` session for each review.
 Only its completed final answer is interpreted as a verdict. Tool output and
 earlier commentary are excluded; provider errors, malformed output, and missing
 final answers fail the review even when the CLI exits zero. Nested reviewers
-set `OPENCODE_GATE_REVIEWER=1`, which disables the adapter's hooks to prevent
-recursive reviews. The canary and rule reviewer have read-only tools; the critic
+set `OPENCODE_GATE_REVIEWER=1`; an adapter must skip its own hooks when it is
+set, to prevent recursive reviews. The canary and rule reviewer have read-only tools; the critic
 can run tests. Reviewers cannot delegate to differently configured subagents.
 
 For OpenAI workers, the default models are:
@@ -89,19 +90,8 @@ Disable the corresponding phase with `CLAUDE_SKIP_DUMBIFY=1`,
 ## Build and test
 
 ```
-nix-build nix/ci.nix    # builds the binary, typechecks/tests the adapter, runs hlint
+nix-build nix/ci.nix    # builds and tests the binary, runs the claude-code and opencode checks and hlint
 ```
-
-The adapter is strict TypeScript checked against the published OpenCode plugin
-and SDK types. Their versions match the image's OpenCode version; update the
-devDependencies in `../opencode/package.json` and regenerate `package-lock.json`
-when bumping it. Nix imports those locked dependencies for typechecking. The
-installed plugin uses type-only imports, so it needs no extra runtime packages.
-
-The live SDK smoke tests start OpenCode with a temporary home and local provider
-fixture (no model credentials). They cover both a mock gate and the real gate
-launching an OpenCode reviewer. From the repository root, run
-`CLAUDE_GATE_TEST_BINARY=/absolute/path/to/claude-gate nix-shell -p nodejs opencode --run 'node --test opencode/test/server-smoke.js'`.
 
 The container builds this via `callCabal2nix ./gate` in the top-level
 `../default.nix`, so the binary ships on `PATH` inside the image.
