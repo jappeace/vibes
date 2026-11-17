@@ -14,5 +14,6 @@ pkgs.runCommand "ci-claude-code"
   } ''
   bash ${./test}/system-prompt.sh ${checkout}
   bash ${./test}/dangerous-rm.sh ${checkout}
+  bash ${./test}/fable-model.sh ${checkout}
   touch $out
 ''

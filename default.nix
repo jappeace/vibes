@@ -73,7 +73,7 @@ let
   # Decision: opencode's model catalogue (models.dev) comes from a pinned
   # checkout of the models.dev repo, built through nixpkgs' own models-dev
   # package with the source swapped for the npins pin. The nixpkgs snapshot
-  # is only refreshed when a maintainer bumps it (2026-10-02 in this pin),
+  # is only refreshed when a maintainer bumps it (2026-10-25 in this pin),
   # while the catalogue changes weekly; the pin is refreshed with
   # `npins update models-dev` like every other pin here.
   # The file is baked into the image at /etc/opencode/models.json and the
@@ -88,18 +88,11 @@ let
   modelsDev = pkgs.models-dev.overrideAttrs (finalAttrs: old: {
     version = "unstable-${builtins.substring 0 7 sources.models-dev.revision}";
     src = sources.models-dev;
-    passthru = old.passthru // {
-      node_modules = old.passthru.node_modules.overrideAttrs (_: {
-        inherit (finalAttrs) version src;
-      });
-    };
   });
 
   opencodeModels = pkgs.runCommand "opencode-models" {} ''
     install -Dm644 ${modelsDev}/dist/_api.json $out/etc/opencode/models.json
   '';
-
-  opencode = import ./opencode/package.nix { inherit pkgs; };
 
   # The end-of-turn gate, compiled from ./gate. Replaces the old bash hook
   # trio (record-edit / reset-turn-state / stop-gate) with one binary exposing
@@ -135,7 +128,7 @@ let
       pkgs.gawk # awk, missing from coreutils
       pkgs.which
       pkgs.claude-code
-      opencode # open-source harness with ChatGPT/OpenAI login, launched with `--agent opencode`
+      pkgs.opencode # open-source harness with ChatGPT/OpenAI login, launched with `--agent opencode`
       pkgs.cowsay
       pkgs.util-linux
       pkgs.imagemagick # convert/mogrify/identify for image editing
@@ -149,7 +142,6 @@ let
       mcpHoogle
       claudeGate
       opencodeModels
-      (pkgs.writeTextDir "etc/opencode/stopgate.ts" (builtins.readFile ./opencode/stopgate.ts))
       (pkgs.writeTextDir "etc/image-manifest" ''
         mcp-hoogle-rev: ${builtins.substring 0 7 sources.mcp-hoogle.revision}
         models-dev-rev: ${builtins.substring 0 7 sources.models-dev.revision}
@@ -242,7 +234,7 @@ let
 in
 
 {
-  inherit env entrypoint opencode;
+  inherit env entrypoint;
 
   image = pkgs.dockerTools.buildImage {
     name = "claude-env";

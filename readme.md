@@ -125,37 +125,25 @@ lives in OpenCode's unpersisted state directory, so use `--model` to choose
 the default on each container launch.
 
 Everything else stays the same: the container, the vibes clone, the GitHub
-bot, the MCP servers (playwright, hoogle, tmux) and `CLAUDE.md` plus `skills/`,
-which opencode reads through its Claude Code compatibility fallbacks. Skills
-show up in the TUI's `/` autocomplete tagged `:skill` (upstream lists them only
-under `/skills`; see `opencode/package.nix`). On the
-first launch run `/connect` inside the TUI, pick OpenAI and then ChatGPT
-Plus/Pro, and open the printed URL in the host browser; the login lands in
-`instances/<name>-opencode/` and is reused on later launches. Pick a model with
-`/models`. The model catalogue (models.dev) is baked into the image from the
-`models-dev` npins pin, so a model that is missing from `/models` means the
-pin is behind: `npins update models-dev` and relaunch.
+bot, the MCP servers (playwright, hoogle, tmux), `CLAUDE.md` and `skills/`.
+OpenCode 2.x reads only `AGENTS.md` on its own, so the config the launcher
+writes lists `CLAUDE.md` under `instructions` (see `write_opencode_config` in
+`claude.sh`); skills are found in `~/.claude/skills`. On the first launch run
+`/connect` inside the TUI, pick OpenAI and then ChatGPT Plus/Pro, and open the
+printed URL in the host browser; the login lands in
+`instances/<name>-opencode/` and is reused on later launches. A login made
+with OpenCode 1.x carries over: 2.x imports its `auth.json` on first start.
+Pick a model with `/models`. The model catalogue (models.dev) is baked into
+the image from the `models-dev` npins pin, so a model that is missing from
+`/models` means the pin is behind: `npins update models-dev` and relaunch.
 
-The end-of-turn gate runs under both harnesses, including OpenAI/ChatGPT workers.
-OpenCode loads `opencode/stopgate.ts` from the read-only image. It resets on a
-real user prompt, records `edit`, `write`, and `apply_patch` (including subagent
-edits), and exports the turn's claims to the same `claude-gate` binary.
-OpenCode 1.18.30 has no blocking Stop hook: after a completed response, the
-adapter checks the turn and automatically continues with any blocking findings.
-The response can therefore appear before its review completes. A new user prompt
-cancels an outstanding review. Escape after generation has already finished does
-not cancel this external review; quitting OpenCode does.
-
-OpenCode reviewers run through `opencode run`, authenticated by the same
-OpenCode/ChatGPT login. For OpenAI workers, dumbify uses GPT-5.6 Terra Fast, rule
-review uses GPT-5.6 Luna, and critique inherits the worker's model and reasoning setting.
-The canary and rule reviewer have read-only tools; the critic can run tests.
-Separate reviewer sessions disable their own gate hooks to prevent recursion.
-Optional per-phase OpenCode model overrides are documented in
-[`gate/Readme.md`](gate/Readme.md#reviewer-backends). Claude Code workers keep
-their existing Claude reviewers. Reviewer failures are reported rather than
-labelled a clean pass. Relaunch the instance after updating the harness so the
-new binary and plugin take effect.
+OpenCode runs vanilla from nixpkgs, without the end-of-turn gate. The 1.x
+stopgate plugin and the two source patches (no bundled system prompt, skills
+in the `/` autocomplete) were dropped with the move to OpenCode 2.x, which
+replaced the plugin API (`@opencode/plugin`) and moved the source the patches
+edited. The gate's OpenCode reviewer backend in `gate/` stays for a 2.x port
+of the plugin; the 2.x `experimental.idle` and `context` session hooks are
+the likely way in.
 
 ### OpenCode startup diagnostics without tmux
 
