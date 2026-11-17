@@ -19,12 +19,9 @@ The binary reads one hook JSON object on stdin and dispatches on its argument.
 | `claude-gate reset`  | UserPromptSubmit | Wipe the previous turn's per-turn state                          |
 | `claude-gate stop-gate` | Stop      | Working hours, complexity canary, critique, rule review, then summary reprint |
 
-`../opencode/stopgate.ts` adapts OpenCode's prompt, edit, and idle events to the
-same protocol. Its `ApplyPatch` records carry the tool's per-file unified diff,
-including deletions, rather than requiring the file to still exist. Gate blocks
-resume the OpenCode session with synthetic feedback, preserving phase counters
-and the original user-turn boundary. The adapter selects OpenCode reviewers
-through the same OpenCode/ChatGPT login; no Claude login is needed.
+OpenCode instances run without the gate since the move to OpenCode 2.x: its
+plugin API replaced the one the stopgate adapter was written against, and the
+adapter was removed. The OpenCode reviewer backend below is kept for a port.
 
 ## Reviewer backends
 

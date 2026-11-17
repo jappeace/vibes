@@ -49,13 +49,12 @@ done
 # instance name, not a separate launcher script. Everything else about an
 # instance (container, vibes clone, character, GitHub bot, ssh key, MCP
 # servers) is harness-independent, and opencode reads ~/.claude/CLAUDE.md
-# and ~/.claude/skills as Claude Code fallbacks, so the existing config
-# mounts carry over unchanged. Alternative considered: a copy of this script
-# per harness. Rejected: the nspawn/docker plumbing is the bulk of the file
-# and would drift. Only the final command, opencode's config file and its
-# state directory differ. `codex` (the OpenAI CLI) is not wired: Jappie
-# prefers opencode for the experiment. Its plugin adapts the same claude-gate
-# protocol to OpenCode events (including ChatGPT workers).
+# (through `instructions` in its config) and ~/.claude/skills, so the
+# existing config mounts carry over unchanged. Alternative considered: a copy
+# of this script per harness. Rejected: the nspawn/docker plumbing is the
+# bulk of the file and would drift. Only the final command, opencode's config
+# file and its state directory differ. `codex` (the OpenAI CLI) is not wired:
+# Jappie prefers opencode for the experiment.
 case "$AGENT" in
     claude|opencode) ;;
     *) echo "Error: unknown agent '$AGENT' (expected claude or opencode)"; exit 1 ;;
@@ -119,37 +118,13 @@ MCP_CONFIG='{"playwright":{"command":"playwright-mcp","args":["--headless","--no
 UPDATED_JSON=$(jq --argjson mcp "$MCP_CONFIG" 'del(.mcpServers) | .mcpServers = $mcp | if .projects then .projects |= map_values(del(.mcpServers)) else . end' "$INSTANCE_JSON")
 echo "$UPDATED_JSON" > "$INSTANCE_JSON"
 
-# Decision: opencode's global config is derived from MCP_CONFIG with jq
-# instead of being a second hand-maintained server list, so both harnesses
-# always get the same MCP servers. `permission: "allow"` is opencode's
-# bypassPermissions: the container is the sandbox, exactly as for claude.
-# The optional --model pins the launch default: /models remembers choices under
-# ~/.local/state/opencode, which is not persisted across container launches.
-# Without --model, retain model discovery because ChatGPT plan access varies.
-# autoupdate is off because the binary comes from nix. The file
-# is written into the per-launch config snapshot and bind-mounted read-only
-# like CLAUDE.md, so the agent cannot widen its own permissions.
-write_opencode_config() {
-    jq -n --argjson mcp "$MCP_CONFIG" --arg model "$OPENCODE_MODEL" '{
-        "$schema": "https://opencode.ai/config.json",
-        autoupdate: false,
-        permission: "allow",
-        plugin: ["file:///etc/opencode/stopgate.ts"],
-        mcp: ($mcp | with_entries(.value = {
-            type: "local",
-            command: ([.value.command] + .value.args),
-            enabled: true
-        }))
-    } + (if $model != "" then {model: $model} else {} end)' > "$1/opencode.json"
-}
-
 # Decision: opencode's own models.dev fetch is disabled
 # (OPENCODE_DISABLE_MODELS_FETCH=1) and the catalogue is the file nix bakes
 # into the image at /etc/opencode/models.json (OPENCODE_MODELS_PATH), see
 # modelsDev in default.nix. Observed on lenovo-tablet (2026-09-12): the TUI
 # died at startup with "Failed to fetch models.dev: Refusing to release:
 # lock is compromised (metadata missing)". The forked background refresh in
-# opencode (packages/core/src/models-dev.ts + util/flock.ts) takes a file
+# opencode 1.x (packages/core/src/models-dev.ts + util/flock.ts) takes a file
 # lock, and a failed release there is an Effect defect that disposes the
 # whole instance; the same code is `orDie` on the network fetch, so no
 # route to models.opencode.ai kills it the same way. With the refresh
@@ -227,7 +202,7 @@ launch_docker() {
     # vibes clone).
     AGENT_MOUNTS=()
     if [ "$AGENT" = "opencode" ]; then
-        write_opencode_config "$CONFIG_SNAPSHOT"
+        write_opencode_config "$CONFIG_SNAPSHOT" "$MCP_CONFIG" "$OPENCODE_MODEL"
         AGENT_MOUNTS+=("-v" "$CONFIG_SNAPSHOT/opencode.json:/home/claude/.config/opencode/opencode.json:ro")
         AGENT_MOUNTS+=("-v" "$OPENCODE_DATA_DIR:/home/claude/.local/share/opencode")
         for models_var in "${OPENCODE_MODELS_ENV[@]}"; do
@@ -417,7 +392,7 @@ launch_nspawn() {
     # `opencode <project>`.
     AGENT_BINDS=()
     if [ "$AGENT" = "opencode" ]; then
-        write_opencode_config "$CONFIG_SNAPSHOT"
+        write_opencode_config "$CONFIG_SNAPSHOT" "$MCP_CONFIG" "$OPENCODE_MODEL"
         AGENT_BINDS+=("--bind-ro=$CONFIG_SNAPSHOT/opencode.json:/home/claude/.config/opencode/opencode.json")
         AGENT_BINDS+=("--bind=$OPENCODE_DATA_DIR:/home/claude/.local/share/opencode")
         AGENT_BINDS+=("--chdir=/home/claude")

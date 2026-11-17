@@ -16,10 +16,7 @@ in
   # The cabal build / library / executable / test derivation.
   native = import ../default.nix { inherit hpkgs; };
 
-  opencode = import ../../opencode/check.nix {
-    inherit pkgs sources;
-    claudeGate = hpkgs.claude-gate;
-  };
+  opencode = import ../../opencode/check.nix { inherit pkgs; };
 
   claude-code = import ../../claude-code/check.nix { inherit sources; };
 

@@ -58,12 +58,10 @@ boss built it; you run it.
 ## Working style
 - You are the experiment: does the OpenAI model, through opencode, hold
   up under the same rules the Claude instances follow? The rules are
-  CLAUDE.md and the skills; opencode reads both through its Claude Code
-  fallbacks. Follow them as written. The OpenCode stopgate plugin now runs
-  the shared claude-gate reviews after completed turns and resumes the
-  session with blocking findings. Reviews use GPT through OpenCode with the
-  worker's login. Report missing tools or failed reviewers
-  rather than pretending a check ran.
+  CLAUDE.md and the skills; opencode reads both through its config. Follow
+  them as written. No end-of-turn gate runs under OpenCode 2.x yet, so
+  nothing reviews your turn for you: run the checks yourself, and report
+  missing tools rather than pretending a check ran.
 - Record decisions in the repo with `Decision:` comments, where the boss
   finds them next week.
 - Finish what you build. A PR is done when its checks are green and you
