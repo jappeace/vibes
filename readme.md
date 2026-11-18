@@ -80,6 +80,24 @@ ssh-keygen -t ed25519 -C "sloth" -f /home/YOUR-USER/.ssh/sloth
 This allows it to clone and push via normal git commands on its own account.
 Add the public key to the bot's GitHub account.
 
+### Google Analytics and Search Console (optional)
+With a Google service-account key at `~/.google_analytics_key.json`, every
+instance gets two read-only MCP servers: `google-analytics` (Google's
+`analytics-mcp`) and `search-console` (`mcp-search-console`). The key is
+mounted read-only at `/run/secrets/google_analytics_key.json`; without it the
+launcher prints a line and registers neither server.
+
+1. In a Google Cloud project, enable the Google Analytics Data API, the
+   Google Analytics Admin API and the Google Search Console API.
+2. Create a service account without project roles and download a JSON key
+   for it to `~/.google_analytics_key.json` (`chmod 600`).
+3. Add the service account's email address as Viewer under GA4 Admin,
+   Property access management, and as a Restricted user under Search
+   Console Settings, Users and permissions, for each property it may read.
+
+Both servers request read-only scopes only, and their write tools stay
+disabled, see `mcp-servers.sh`.
+
 ## Usage
 Run a named instance:
 ```
@@ -125,7 +143,8 @@ lives in OpenCode's unpersisted state directory, so use `--model` to choose
 the default on each container launch.
 
 Everything else stays the same: the container, the vibes clone, the GitHub
-bot, the MCP servers (playwright, hoogle, tmux), `CLAUDE.md` and `skills/`.
+bot, the MCP servers (playwright, hoogle, tmux and the optional Google ones),
+`CLAUDE.md` and `skills/`.
 OpenCode 2.x reads only `AGENTS.md` on its own, so the config the launcher
 writes lists `CLAUDE.md` under `instructions` (see `write_opencode_config` in
 `claude.sh`); skills are found in `~/.claude/skills`. On the first launch run
