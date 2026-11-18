@@ -40,6 +40,7 @@ write_opencode_config() {
         mcp: ($mcp | with_entries(.value = {
             type: "local",
             command: ([.value.command] + .value.args),
+            environment: (.value.env // {}),
             enabled: true
         }))
     } + (if $model != "" then {model: $model} else {} end)' > "$1/opencode.json"

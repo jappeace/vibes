@@ -20,6 +20,8 @@ in
 
   claude-code = import ../../claude-code/check.nix { inherit sources; };
 
+  google-mcp = import ../../google-mcp/check.nix { inherit pkgs; };
+
   # Enforce .hlint.yaml across app/src/test as part of CI, pinned to the same
   # nixpkgs as the rest of the toolchain.
   hlint = pkgs.runCommand "ci-hlint"

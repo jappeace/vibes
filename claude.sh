@@ -68,6 +68,8 @@ fi
 # shellcheck source=agent-command.sh
 . "$(pwd)/agent-command.sh"
 set_agent_command "$AGENT" "$VANILLA"
+# shellcheck source=mcp-servers.sh
+. "$(pwd)/mcp-servers.sh"
 
 mkdir -p "../vibes/$INSTANCE_NAME"
 
@@ -112,9 +114,13 @@ if [ ! -f "$INSTANCE_JSON" ]; then
     echo "{}" > "$INSTANCE_JSON"
 fi
 
+# One read-only service-account key for Google Analytics and Search Console.
+GOOGLE_KEY_HOST="$HOME/.google_analytics_key.json"
+GOOGLE_KEY_CONTAINER="/run/secrets/google_analytics_key.json"
+
 # Claude Code reads MCP servers from ~/.claude.json (not settings.json).
 # Clear any stale per-project entries Claude Code writes during sessions.
-MCP_CONFIG='{"playwright":{"command":"playwright-mcp","args":["--headless","--no-sandbox","--isolated","--ignore-https-errors","--executable-path","/usr/local/bin/chromium"]},"hoogle":{"command":"mcp-hoogle","args":["serve"]},"tmux":{"command":"tmux-mcp-rs","args":[]}}'
+MCP_CONFIG="$(mcp_servers_config "$GOOGLE_KEY_HOST" "$GOOGLE_KEY_CONTAINER")"
 UPDATED_JSON=$(jq --argjson mcp "$MCP_CONFIG" 'del(.mcpServers) | .mcpServers = $mcp | if .projects then .projects |= map_values(del(.mcpServers)) else . end' "$INSTANCE_JSON")
 echo "$UPDATED_JSON" > "$INSTANCE_JSON"
 
@@ -177,6 +183,11 @@ launch_docker() {
         REDDIT_SECRET_ARGS=("-e" "REDDIT_USERNAME=jappeace-sloth" "-e" "REDDIT_PASSWORD=$(cat ~/.reddit_secret)")
     fi
 
+    GOOGLE_KEY_MOUNT=()
+    if [ -f "$GOOGLE_KEY_HOST" ]; then
+        GOOGLE_KEY_MOUNT=("-v" "$GOOGLE_KEY_HOST:$GOOGLE_KEY_CONTAINER:ro")
+    fi
+
     # Private per-launch copy of the read-only config group, mounted instead of
     # the live $(pwd) paths (see launch_nspawn for the rationale). character is
     # mounted even in vanilla mode, so it is always snapshotted.
@@ -227,6 +238,7 @@ launch_docker() {
         -e COLORTERM=truecolor \
         -e GH_TOKEN="$(cat ~/.gh_token)" \
         "${REDDIT_SECRET_ARGS[@]}" \
+        "${GOOGLE_KEY_MOUNT[@]}" \
         -e HOME="/home/claude" \
         -e CLAUDE_UID="$(id -u)" \
         -e CLAUDE_GID="$(id -g)" \
@@ -407,6 +419,11 @@ launch_nspawn() {
         REDDIT_SETENV+=("--setenv=REDDIT_PASSWORD=$(cat ~/.reddit_secret)")
     fi
 
+    GOOGLE_KEY_BIND=()
+    if [ -f "$GOOGLE_KEY_HOST" ]; then
+        GOOGLE_KEY_BIND=("--bind-ro=$GOOGLE_KEY_HOST:$GOOGLE_KEY_CONTAINER")
+    fi
+
     KVM_BIND=()
     if [ -e /dev/kvm ] && [ -w /dev/kvm ]; then
         KVM_BIND=("--bind=/dev/kvm")
@@ -454,6 +471,7 @@ launch_nspawn() {
         --setenv=CLAUDE_GID="$(id -g)" \
         --setenv=GH_TOKEN="$(cat ~/.gh_token)" \
         "${REDDIT_SETENV[@]}" \
+        "${GOOGLE_KEY_BIND[@]}" \
         "${KVM_BIND[@]}" \
         "$ENTRYPOINT_PATH" "${AGENT_COMMAND[@]}"
 }

@@ -94,6 +94,8 @@ let
     install -Dm644 ${modelsDev}/dist/_api.json $out/etc/opencode/models.json
   '';
 
+  googleMcp = import ./google-mcp { inherit pkgs; };
+
   # The end-of-turn gate, compiled from ./gate. Replaces the old bash hook
   # trio (record-edit / reset-turn-state / stop-gate) with one binary exposing
   # `claude-gate record|reset|stop-gate`. justStaticExecutables keeps only the
@@ -140,6 +142,7 @@ let
       pkgs.tmux
       tmuxMcp
       mcpHoogle
+      googleMcp.binaries
       claudeGate
       opencodeModels
       (pkgs.writeTextDir "etc/image-manifest" ''
