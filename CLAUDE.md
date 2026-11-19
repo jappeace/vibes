@@ -99,6 +99,10 @@ implementation works.
 # Style
 - Avoid using wildcards on pattern matching if possible, always write out all cases.
 - Always add type signatures to top level bindings, try make types as restrictive as possible.
+- Type aliases are frowned upon: they hide the real type at every use site
+  and add no type safety. Write the type out, or use a newtype when the
+  value deserves its own identity. Reach for an alias only when the
+  written-out type is long and repeated across many signatures.
 - If a function remains confusing after improving its names and structure,
   document the missing contract or rationale at its declaration, following
   the `code-comments` skill.
